@@ -4,7 +4,7 @@ import time, requests, os
 app = Flask(__name__)
 active_users = {}
 
-WEBHOOK_URL = os.environ.get("https://discord.com/api/webhooks/1353444682750885908/IFXyAC9N-JTyfei7xHELY42HQi0Gm9JRI40zAf-PudmxwApWMnOu2BLVjCCKDewSnrTF")
+WEBHOOK_URL = os.environ.get("https://discord.com/api/webhooks/1353444682750885908/IFXyAC9N-JTyfei7xHELY42HQi0Gm9JRI40zAf-PudmxwApWMnOu2BLVjCCKDewSnrTF")  # Assure-toi qu'il est bien défini dans les variables d'environnement
 
 def get_active_count():
     now = time.time()
@@ -22,7 +22,7 @@ def update_webhook():
                 "color": 2229428,
                 "author": {
                     "name": "FIVEPACK",
-                    "icon_url": "https://cdn.discordapp.com/attachments/1353365578680766469/1363285117073752245/logo.jpg?ex=680579b4&is=68042834&hm=f2cf62ba061ca4ea129f08ea4687a57e9c5526b950816a399ecf9b04c7a3696e&"
+                    "icon_url": "https://cdn.discordapp.com/attachments/1353365578680766469/1363285117073752245/logo.jpg"
                 },
                 "fields": [
                     {
@@ -63,29 +63,27 @@ def update_webhook():
                 ]
             }
         ],
-        "components": [],
-        "actions": {},
         "username": "FIVEPACK",
-        "avatar_url": "https://cdn.discordapp.com/attachments/1353365578680766469/1363285117073752245/logo.jpg?ex=680579b4&is=68042834&hm=f2cf62ba061ca4ea129f08ea4687a57e9c5526b950816a399ecf9b04c7a3696e&"
+        "avatar_url": "https://cdn.discordapp.com/attachments/1353365578680766469/1363285117073752245/logo.jpg"
     }
 
     try:
-        # Mettre à jour le webhook Discord avec l'embed
         requests.patch(WEBHOOK_URL, json=embed_payload)
     except Exception as e:
         print("Erreur lors de la mise à jour du webhook :", e)
 
-@app.route("/ping", methods=["POST"])
+@app.route("/ping", methods=["GET", "POST"])
 def ping():
+    if request.method == "GET":
+        return "❌ Cette route attend une requête POST avec un ID JSON.", 405
+
     data = request.get_json()
-    user_id = data.get("id")
-    
-    # Enregistrer l'utilisateur actif dans la liste
+    if not data or "id" not in data:
+        return jsonify({"error": "ID manquant"}), 400
+
+    user_id = data["id"]
     active_users[user_id] = time.time()
-
-    # Mettre à jour le webhook avec le nombre d'utilisateurs actifs
     update_webhook()
-
     return jsonify({"status": "pong"})
 
 @app.route("/stats", methods=["GET"])
