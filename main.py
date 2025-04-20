@@ -70,6 +70,7 @@ def update_webhook():
     }
 
     try:
+        # Mettre à jour le webhook Discord avec l'embed
         requests.patch(WEBHOOK_URL, json=embed_payload)
     except Exception as e:
         print("Erreur lors de la mise à jour du webhook :", e)
@@ -78,8 +79,13 @@ def update_webhook():
 def ping():
     data = request.get_json()
     user_id = data.get("id")
+    
+    # Enregistrer l'utilisateur actif dans la liste
     active_users[user_id] = time.time()
+
+    # Mettre à jour le webhook avec le nombre d'utilisateurs actifs
     update_webhook()
+
     return jsonify({"status": "pong"})
 
 @app.route("/stats", methods=["GET"])
