@@ -4,7 +4,7 @@ import time, requests, os
 app = Flask(__name__)
 active_users = {}
 
-WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK")
+WEBHOOK_URL = os.environ.get("https://discord.com/api/webhooks/1353444682750885908/IFXyAC9N-JTyfei7xHELY42HQi0Gm9JRI40zAf-PudmxwApWMnOu2BLVjCCKDewSnrTF")
 
 def get_active_count():
     now = time.time()
