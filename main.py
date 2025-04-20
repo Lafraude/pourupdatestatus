@@ -4,21 +4,21 @@ import time, requests, os
 app = Flask(__name__)
 active_users = {}
 
-WEBHOOK_URL = os.environ.get("https://discord.com/api/webhooks/1353444682750885908/IFXyAC9N-JTyfei7xHELY42HQi0Gm9JRI40zAf-PudmxwApWMnOu2BLVjCCKDewSnrTF")  # Assure-toi qu'il est bien défini dans les variables d'environnement
+WEBHOOK_URL = os.environ.get("https://discord.com/api/webhooks/1353444682750885908/IFXyAC9N-JTyfei7xHELY42HQi0Gm9JRI40zAf-PudmxwApWMnOu2BLVjCCKDewSnrTF")
+MESSAGE_ID_FILE = "message_id.txt"  # Pour stocker l’ID du message créé
 
 def get_active_count():
     now = time.time()
     return sum(1 for t in active_users.values() if now - t < 60)
 
-def update_webhook():
+def build_embed():
     count = get_active_count()
 
-    embed_payload = {
+    return {
         "content": "",
         "tts": False,
         "embeds": [
             {
-                "id": 815429150,
                 "color": 2229428,
                 "author": {
                     "name": "FIVEPACK",
@@ -26,36 +26,30 @@ def update_webhook():
                 },
                 "fields": [
                     {
-                        "id": 780596281,
                         "name": "Status :",
                         "value": ":32535applicationapprivedids:",
                         "inline": True
                     },
                     {
-                        "id": 240109194,
                         "name": "Downloadable :",
                         "value": ":2775applicationdeniedids:",
                         "inline": True
                     },
                     {
-                        "id": 197967438,
                         "name": "Voici le lien du téléchargement",
                         "value": "[Clique pour télécharger]()",
                         "inline": False
                     },
                     {
-                        "id": 309815222,
                         "name": " ",
-                        "value": " ----------------------------------------------------"
+                        "value": "----------------------------------------------------"
                     },
                     {
-                        "id": 75380828,
                         "name": "Nombre de spoof total :",
                         "value": "{none}",
                         "inline": False
                     },
                     {
-                        "id": 6574565,
                         "name": "Nombre d'utilisateurs actifs sur l'application :",
                         "value": f"{count}",
                         "inline": False
@@ -67,21 +61,47 @@ def update_webhook():
         "avatar_url": "https://cdn.discordapp.com/attachments/1353365578680766469/1363285117073752245/logo.jpg"
     }
 
+def create_or_load_message_id():
+    """ Crée le message Discord une fois et récupère son ID. """
+    if os.path.exists(MESSAGE_ID_FILE):
+        with open(MESSAGE_ID_FILE, "r") as f:
+            return f.read().strip()
+
+    # Le message n’existe pas, on le crée via POST
+    embed_payload = build_embed()
+    response = requests.post(WEBHOOK_URL + "?wait=true", json=embed_payload)
+
+    if response.status_code == 200:
+        message_id = response.json()["id"]
+        with open(MESSAGE_ID_FILE, "w") as f:
+            f.write(message_id)
+        return message_id
+    else:
+        print("❌ Échec de la création du message initial :", response.text)
+        return None
+
+def update_webhook():
+    message_id = create_or_load_message_id()
+    if not message_id:
+        return
+
+    embed_payload = build_embed()
+
     try:
-        requests.patch(WEBHOOK_URL, json=embed_payload)
+        response = requests.patch(f"{WEBHOOK_URL}/messages/{message_id}", json=embed_payload)
+        if response.status_code != 200:
+            print("⚠️ PATCH échoué :", response.text)
     except Exception as e:
-        print("Erreur lors de la mise à jour du webhook :", e)
+        print("❌ Erreur lors du PATCH :", e)
 
-@app.route("/ping", methods=["GET", "POST"])
+@app.route("/ping", methods=["POST"])
 def ping():
-    if request.method == "GET":
-        return "❌ Cette route attend une requête POST avec un ID JSON.", 405
-
     data = request.get_json()
-    if not data or "id" not in data:
+    user_id = data.get("id")
+
+    if not user_id:
         return jsonify({"error": "ID manquant"}), 400
 
-    user_id = data["id"]
     active_users[user_id] = time.time()
     update_webhook()
     return jsonify({"status": "pong"})
@@ -96,4 +116,8 @@ def home():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
+
+    # Crée le message embed au démarrage si nécessaire
+    create_or_load_message_id()
+
     app.run(host="0.0.0.0", port=port)
