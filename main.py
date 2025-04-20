@@ -27,12 +27,12 @@ def build_embed():
                 "fields": [
                     {
                         "name": "Status :",
-                        "value": ":32535applicationapprivedids:",
+                        "value": "<:32535applicationapprivedids:1363285894596919417>",
                         "inline": True
                     },
                     {
                         "name": "Downloadable :",
-                        "value": ":2775applicationdeniedids:",
+                        "value": "<:2775applicationdeniedids:1363285887277989958>",
                         "inline": True
                     },
                     {
